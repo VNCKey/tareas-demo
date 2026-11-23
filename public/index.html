@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tareas</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 32rem; margin: 2rem auto; padding: 0 1rem; }
+    form { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    input { flex: 1; padding: .4rem; }
+    li.hecha { text-decoration: line-through; color: #666; }
+    #error { color: #b00020; min-height: 1.2rem; }
+  </style>
+</head>
+<body>
+  <h1>Tareas</h1>
+  <form id="formulario">
+    <input id="titulo" placeholder="Nueva tarea" maxlength="120" required>
+    <button type="submit">Añadir</button>
+  </form>
+  <p id="error" role="alert"></p>
+  <p id="resumen"></p>
+  <ul id="lista"></ul>
+  <script type="module">
+    import { filaTarea, resumen, validarEntrada } from '/lista.js';
+
+    const lista = document.getElementById('lista');
+    const resumenEl = document.getElementById('resumen');
+    const errorEl = document.getElementById('error');
+
+    async function cargar() {
+      const respuesta = await fetch('/tareas');
+      const tareas = await respuesta.json();
+      lista.innerHTML = tareas.map(filaTarea).join('');
+      resumenEl.textContent = resumen(tareas);
+    }
+
+    document.getElementById('formulario').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      errorEl.textContent = '';
+      const titulo = validarEntrada(document.getElementById('titulo').value);
+      if (titulo === null) { errorEl.textContent = 'Escribe un título de hasta 120 caracteres.'; return; }
+      const respuesta = await fetch('/tareas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo }),
+      });
+      if (!respuesta.ok) { errorEl.textContent = 'No se pudo crear la tarea.'; return; }
+      document.getElementById('titulo').value = '';
+      await cargar();
+    });
+
+    cargar();
+  </script>
+</body>
+</html>
